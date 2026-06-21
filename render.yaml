@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: free-claude-code
+    runtime: python
+    pythonVersion: 3.14
+    buildCommand: pip install uv && uv pip install -e .
+    startCommand: fcc-server
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8082
+      - key: NVIDIA_NIM_API_KEY
+        scope: build
+        sync: false
+      - key: OPENROUTER_API_KEY
+        scope: build
+        sync: false
