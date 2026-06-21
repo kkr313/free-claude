@@ -3,7 +3,7 @@ services:
     name: free-claude-code
     runtime: python
     pythonVersion: 3.14
-    buildCommand: pip install uv && uv pip install -e .
+    buildCommand: pip install uv && uv sync --frozen && uv cache prune --ci
     startCommand: fcc-server
     envVars:
       - key: HOST
