@@ -15,6 +15,8 @@ from pydantic import BaseModel, Field
 
 from config.settings import Settings
 from config.settings import get_settings as get_cached_settings
+from api.dependencies import require_api_key
+import secrets
 from providers.registry import ProviderRegistry
 
 from .admin_config import (
@@ -63,7 +65,29 @@ def _origin_is_local(origin: str | None) -> bool:
 
 def require_loopback_admin(request: Request) -> None:
     """Allow admin access only from the local machine."""
+    # Allow access when authenticated with the server API key (ANTHROPIC_AUTH_TOKEN).
+    # This permits secure remote admin access when a proper bearer token or x-api-key
+    # header is provided. If no token is configured, the loopback restriction is enforced.
+    settings = get_cached_settings()
+    anthropic_auth_token = settings.anthropic_auth_token.strip()
 
+    if anthropic_auth_token:
+        # Check common headers for the admin token (same as require_api_key)
+        header = (
+            request.headers.get("x-api-key")
+            or request.headers.get("authorization")
+            or request.headers.get("anthropic-auth-token")
+        )
+        if header:
+            token = header.strip()
+            if header.lower().startswith("bearer "):
+                token = header.split(" ", 1)[1].strip()
+            if token and ":" in token:
+                token = token.split(":", 1)[0].strip()
+            if secrets.compare_digest(token.encode("utf-8"), anthropic_auth_token.encode("utf-8")):
+                return
+
+    # Fallback: only allow loopback access
     client_host = request.client.host if request.client else None
     if not _is_loopback_host(client_host):
         raise HTTPException(status_code=403, detail="Admin UI is local-only")
