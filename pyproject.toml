@@ -51,7 +51,11 @@ packages = ["api", "cli", "config", "core", "messaging", "providers"]
 ".env.example" = "cli/env.example"
 
 [tool.uv]
-required-version = ">=0.11.0"
+# Relaxed for cloud build environments where the platform-provided `uv` may be older.
+# Render's build environment previously had `uv==0.10.2` which caused a pre-build error
+# because the pyproject check runs before custom build commands. This requirement
+# can be tightened later if you confirm the build environment installs/upgrades `uv`
+required-version = ">=0.10.2"
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu130" }
